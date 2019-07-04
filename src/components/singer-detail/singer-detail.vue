@@ -1,14 +1,15 @@
 <template>
     <transition>
-
+        <music-list :title="title" :bg-image="bgImage" :songs="songs"></music-list>
     </transition>
 </template>
 
 <script>
     import {mapGetters} from 'vuex'
-    import {getSingerDetail} from "../../api/singer";
+    import {getSingerDetail,getSongVkey} from "../../api/singer";
     import {ERR_OK} from "../../api/config";
     import {createSong} from "../../common/js/song";
+    import MusicList from '../../components/music-list/music-list'
 
     export default {
         data() {
@@ -17,6 +18,12 @@
             }
         },
         computed: {
+            title() {
+                return this.singer.name
+            },
+            bgImage() {
+                return this.singer.avatar
+            },
             ...mapGetters([
                 'singer'
             ])
@@ -47,14 +54,22 @@
                     //只关心musicData里面的数据其他不关心，所以用解构赋值
                     let {musicData} = item
 
-                    //createSong这个方法必须传入songid albummid两个参数
-                    if (musicData.songid && musicData.albummid) {
-                        ret.push(createSong(musicData))
-                    }
+                    getSongVkey(musicData.songmid).then((res) => {
+                        const vkey = res.data.items[0].vkey;
+                        //createSong这个方法必须传入songid albummid两个参数
+                        if (musicData.songid && musicData.albummid) {
+                            ret.push(createSong(musicData,vkey))
+                        }
+                    })
+
+
                 })
                 return ret
             }
 
+        },
+        components: {
+            MusicList
         }
     }
 </script>

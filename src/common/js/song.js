@@ -17,7 +17,7 @@ export default class Song {
 
 //创建一个song的对象，这是一个功能方法，不用每次都new一个song对象。
 // 不用直接调用song，直接返回一个song实例
-export function createSong(musicData) {
+export function createSong(musicData,vkey) {
     return new Song({
         id: musicData.songid,
         mid: musicData.songmid,
@@ -26,7 +26,7 @@ export function createSong(musicData) {
         album: musicData.albumname,//专辑名称
         duration: musicData.interval,//播放时间
         image: `https://y.gtimg.cn/music/photo_new/T002R300x300M000${musicData.albummid}.jpg?max_age=2592000`,//图片地址
-        url: `http://ws.stream.qqmusic.qq.com/${musicData.songid}.m4a?fromtag=46`//song的地址，可播放的源，这是其中一个
+        url: `http://dl.stream.qqmusic.qq.com/C400${musicData.songmid}.m4a?fromtag=38&guid=5931742855&vkey=${vkey}`//song的地址，可播放的源，这是其中一个
     })
 }
 
