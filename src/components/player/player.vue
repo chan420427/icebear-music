@@ -30,13 +30,13 @@
                     <div class="progress-wrapper">
                         <span class="time time-l">{{format(currentTime)}}</span>
                         <div class="progress-bar-wrapper">
-                            <progress-bar :percent="percent"></progress-bar>
+                            <progress-bar :percent="percent" @percentChange="onProgressBarChange"></progress-bar>
                         </div>
                         <span class="time time-r">{{format(currentSong.duration)}}</span>
                     </div>
                     <div class="operators">
-                        <div class="icon i-left">
-                            <i class="icon-sequence"></i>
+                        <div class="icon i-left" @click="changeMode">
+                            <i :class="iconMode"></i>
                         </div>
                         <div class="icon i-left" :class="disableCls">
                             <i @click="prev" class="icon-prev"></i>
@@ -64,7 +64,9 @@
                     <p class="desc" v-html="currentSong.singer"></p>
                 </div>
                 <div class="control">
-                    <i @click.stop="togglePlaying" :class="miniIcon"></i>
+                    <progress-circle :radius="radius" :percent="percent">
+                        <i @click.stop="togglePlaying" class="icon-mini" :class="miniIcon"></i>
+                    </progress-circle>
                 </div>
                 <div class="control">
                     <i class="icon-playlist"></i>
@@ -72,7 +74,7 @@
             </div>
         </transition>
         <audio ref="audio" :src="currentSong.url" @canplay="ready"
-               @error="error" @timeupdate="updateTime"></audio>
+               @error="error" @timeupdate="updateTime" @ended="end"></audio>
     </div>
 </template>
 
@@ -81,6 +83,9 @@
     import animations from 'create-keyframe-animation'
     import {prefixStyle} from 'common/js/dom'
     import ProgressBar from '../../base/progress-bar/progress-bar'
+    import ProgressCircle from '../../base/progress-circle/progress-circle'
+    import {playMode} from 'common/js/config'
+    import {shuffle} from "../../common/js/util";
 
 
     const transform = prefixStyle('transform')
@@ -91,6 +96,7 @@
             return {
                 songReady: false,//标志位
                 currentTime: 0,//播放歌曲的当前时间
+                radius: 32,//不在视图里直接写radius=“32”是因为会传过去会变成字符串
             }
         },
         computed: {
@@ -99,6 +105,10 @@
             },
             playIcon() {
                 return this.playing? 'icon-pause':'icon-play'
+            },
+            iconMode() {
+                return this.mode === playMode.sequence ? 'icon-sequence' : this.mode ===
+                playMode.loop ? 'icon-loop' : 'icon-random'
             },
             miniIcon() {
                 return this.playing? 'icon-pause-mini':'icon-play-mini'
@@ -115,7 +125,9 @@
                 'playlist',
                 'currentSong',
                 'playing',
-                'currentIndex'
+                'currentIndex',
+                'mode',
+                'sequenceList'
             ])
         },
         created() {
@@ -176,6 +188,19 @@
             togglePlaying() {
                 this.setPlayingState(!this.playing)
             },
+            //audio的end事件
+            end() {
+                if(this.mode === playMode.loop) {
+                    this.loop()
+                }else {
+                    this.next()
+                }
+            },
+            //循环播放
+            loop() {
+                this.$refs.audio.currentTime = 0
+                this.$refs.audio.play()
+            },
             next() {
                 if(!this.songReady) {
                     return
@@ -224,6 +249,37 @@
                 const second = this._pad(interval % 60)
                 return `${minute}:${second}`
             },
+            onProgressBarChange(percent) {
+                //拖动进度条让歌曲的进度也到达相应的位置
+                const currentTime = this.currentSong.duration * percent
+                this.$refs.audio.currentTime = currentTime
+
+                //在拖动进度条后暂停，调用切换暂停和播放方法让歌曲也可以正常播放和暂停
+                if (!this.playing) {
+                    this.togglePlaying()
+                }
+
+            },
+            changeMode() {
+                const mode = (this.mode + 1) % 3
+                this.setPlayMode(mode)
+                let list = null
+                if(mode === playMode.random){
+                    list = shuffle(this.sequenceList)
+                }else {
+                    list = this.sequenceList
+                }
+                this.resetCurrentIndex(list)
+                this.setPlayList(list)
+            },
+            //重新设置当前歌曲,保证切换播放模式时当前的播放歌曲是不发生变化的
+            resetCurrentIndex(list) {
+                //找到当前歌曲的索引
+                let index = list.findIndex((item) => {
+                    return item.id === this.currentSong.id
+                })
+                this.setCurrentIndex(index)
+            },
             //给秒数补零，默认两位小数
             _pad(num, n = 2) {
                 let len = num.toString().length
@@ -258,11 +314,17 @@
             ...mapMutations({
                 setFullScreen: 'SET_FULL_SCREEN',
                 setPlayingState:'SET_PLAYING_STATE',
-                setCurrentIndex: 'SET_CURRENT_INDEX'
+                setCurrentIndex: 'SET_CURRENT_INDEX',
+                setPlayMode : 'SET_PLAY_MODE',
+                setPlayList : 'SET_PLAYLIST'
             }),
         },
         watch: {
-            currentSong() {
+            currentSong(newSong,oldSong) {
+                //在切换播放模式的时候。changeMode方法会改变playlist和currentIndex就会导致监听到currentSong发生变化，但其实id是没有改变的
+                if(newSong.id === oldSong.id) {
+                    return
+                }
                 this.$nextTick(() => {//延迟 请求播放地址完成后再播放
                     this.$refs.audio.play()
                 })
@@ -276,7 +338,8 @@
             }
         },
         components: {
-            ProgressBar
+            ProgressBar,
+            ProgressCircle
         }
     }
 </script>
