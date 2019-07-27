@@ -95,6 +95,9 @@
 
                 this._scrollTo(anchorIndex)
             },
+            refresh() {
+              this.$refs.listview.refresh()
+            },
             scroll(pos) {
                 //派发的滚动事件实时监听滚动的y值
                 this.scrollY = pos.y

@@ -40,6 +40,55 @@ const devWebpackConfig = merge(baseWebpackConfig, {
                   console.log(e)
               })
           })
+
+          app.get('/lyric', (req, res) => {
+              var url = 'https://c.y.qq.com/lyric/fcgi-bin/fcg_query_lyric_yqq.fcg'
+              axios.get(url, {
+                  headers: {
+                      referer: 'https://c.y.qq.com/',//强化变成QQ音乐的地址，为了就是绕过它的限制
+                      host: 'c.y.qq.com'
+                  },
+                  params: req.query
+              }).then((response) => {
+                  var ret = response.data
+                  if (typeof ret === 'string') {
+                      var reg = /^\w+\(({[^()]+})\)$/
+                      var matches = ret.match(reg)
+                      if (matches) {
+                          ret = JSON.parse(matches[1])
+                      }
+                  }
+                  res.json(ret)
+              }).catch((e) => {
+                  console.log(e)
+              })
+          })
+
+
+          app.get('/getSongList', function (req, res) {
+              var url = 'https://c.y.qq.com/qzone/fcg-bin/fcg_ucc_getcdinfo_byids_cp.fcg'
+              axios.get(url, {
+                  headers: {
+                      referer: 'https://y.qq.com/',
+                      host: 'c.y.qq.com'
+                  },
+                  params: req.query
+              }).then((response) => {
+                  var ret = response.data
+                  if (typeof ret === 'string') {
+                      // var reg = /^\w+\(({[^()]+})\)$/
+                      var reg = /{.*}/
+                      var matches = ret.match(reg)
+                      if (matches) {
+                          ret = JSON.parse(matches[0])
+                      }
+                  }
+                  res.json(ret)
+              }).catch((e) => {
+                  console.log(e)
+              })
+          })
+
       },
     clientLogLevel: 'warning',
     historyApiFallback: {

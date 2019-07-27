@@ -1,6 +1,6 @@
 <template>
-    <div class="singer">
-        <list-view @select="selectSinger" :data="singers"></list-view>
+    <div class="singer" ref="singer">
+        <list-view @select="selectSinger" :data="singers" ref="list"></list-view>
         <router-view></router-view>
     </div>
 </template>
@@ -11,11 +11,13 @@
     import Singer from "../../common/js/singer"
     import ListView from '../../base/listview/listview'
     import {mapMutations} from 'vuex'
+    import {playlistMixin} from "../../common/js/mixin";
 
     const HOT_SINGER_LEN = 10
     const HOT_NAME = '热门'
 
     export default {
+        mixins: [playlistMixin],
         data() {
             return {
                 singers: []
@@ -25,6 +27,13 @@
             this._getSingerList()
         },
         methods: {
+            handlePlaylist(playlist) {
+                const bottom = playlist.length > 0 ? '60px' : ''
+                //$refs.list是一个vue组件拿到组件里面的dom元素需要$el
+                this.$refs.singer.style.bottom = bottom
+                this.$refs.list.refresh()
+
+            },
             selectSinger(singer) {
                 this.$router.push({
                     path: `/singer/${singer.id}`
