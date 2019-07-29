@@ -45,23 +45,27 @@
                 getMusicList(this.topList.id).then((res) => {
                     if (res.code === ERR_OK) {
                         this.songs = this._normalizeSongs(res.songlist)
-                        console.log(res.songlist)
+                        this.songs.forEach((item) => {
+                            getSongVkey(item.mid).then((res) => {
+
+                                let vkey = res.data.items[0].vkey;
+                                if (item.id) {
+                                    item.url = `http://dl.stream.qqmusic.qq.com/C400${item.mid}.m4a?fromtag=38&guid=5931742855&vkey=${vkey}`
+                                }
+                            })
+                        })
                     }
                 })
             },
             _normalizeSongs(list) {
                 let ret = []
-                let lock = false;
+
                 list.forEach((item) => {
                     const musicData = item.data
-                    getSongVkey(musicData.songmid).then((res) => {
-                         const vkey = res.data.items[0].vkey;
-                        //createSong这个方法必须传入songid albummid两个参数
-                        if (musicData.songid && musicData.albummid) {
-                            ret.push(createSong(musicData,vkey))
-                        }
+                    if (musicData.songid && musicData.albummid) {
+                        ret.push(createSong(musicData))
+                    }
 
-                    })
 
                 })
 

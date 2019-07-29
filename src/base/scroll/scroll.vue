@@ -33,6 +33,11 @@
                 type: Number,
                 default: 20
             },
+            //上拉刷新
+            pullup: {
+                type: Boolean,
+                default: false
+            }
         },
         mounted() {
             // 保证在DOM渲染完毕后初始化better-scroll
@@ -55,6 +60,16 @@
                     let me = this
                     this.scroll.on('scroll', (pos) => {
                         me.$emit('scroll',pos)
+                    })
+                }
+
+                //向外部组件派发一个事件
+                if(this.pullup) {
+                    //scrollEnd是滚动结束事件，scrollToEnd是滚动到底部事件
+                    this.scroll.on('scrollEnd', () => {
+                        if (this.scroll.y <= this.scroll.maxScrollY + 50) {
+                            this.$emit('scrollToEnd')
+                        }
                     })
                 }
 

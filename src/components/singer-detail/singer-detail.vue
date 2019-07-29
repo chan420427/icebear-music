@@ -41,7 +41,7 @@
                 getSingerDetail(this.singer.id).then((res) => {
                     if (res.code === ERR_OK) {
                         this.songs = this._normalizeSongs(res.data.list)
-                        console.log(this._normalizeSongs(res.data.list))
+console.log(this._normalizeSongs(res.data.list))
                     }
                 })
             },
@@ -64,6 +64,7 @@
 
 
                 })
+
                 return ret
             }
 

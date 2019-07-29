@@ -33,3 +33,54 @@ export const randomPlay = function ({commit}, {list}) {
     commit(types.SET_FULL_SCREEN, true)
     commit(types.SET_PLAYING_STATE, true)
 }
+
+export const insertSong = function ({commit, state}, song) {
+    //slice()相当于是state.playlist的一个副本而不是直接操作state的playlist，在mutation之外修改vuex的状态是会报错的
+    let playlist = state.playlist.slice()
+    let sequenceList = state.sequenceList.slice()
+    let currentIndex = state.currentIndex
+    // 记录当前歌曲
+    let currentSong = playlist[currentIndex]
+    // 查找当前列表中是否有待插入的歌曲并返回其索引，返回的是要插入的歌曲是否原来已经存在且它的索引
+    let fpIndex = findIndex(playlist, song)
+    // 因为是插入歌曲，所以索引+1
+    currentIndex++
+    // 插入这首歌到当前索引位置
+    playlist.splice(currentIndex, 0, song)
+    // 如果已经包含了这首歌
+    if (fpIndex > -1) {
+        // 如果当前插入的序号大于列表中的序号
+        // 例子：[1,2,3,4] [1,2,3,4,2]要插入2并且当前插入2的序号是4大于原本在数组里面2的序号，就删除原本在数组里面的2
+        if (currentIndex > fpIndex) {
+            playlist.splice(fpIndex, 1)
+            currentIndex--
+        } else {
+            //[1,3,4,2] [1,2,3,4,2]要插入2并且当前插入2的序号是1小于原本在数组里面2的序号，就删除原本在列表里面的2即最后一个2[1,2,3,4]
+            //为什么是删除fpIndex + 1，因为在它之前已经插入了一个，它的索引已经往后推了一个
+            playlist.splice(fpIndex + 1, 1)
+        }
+    }
+
+    //当前sequenceList的索引，要插入的song的位置
+    let currentSIndex = findIndex(sequenceList, currentSong) + 1
+
+    //当前sequenceList有没有包含我们要插入的song
+    let fsIndex = findIndex(sequenceList, song)
+
+    //插入一首歌
+    sequenceList.splice(currentSIndex, 0, song)
+
+    if (fsIndex > -1) {
+        if (currentSIndex > fsIndex) {
+            sequenceList.splice(fsIndex, 1)
+        } else {
+            sequenceList.splice(fsIndex + 1, 1)
+        }
+    }
+
+    commit(types.SET_PLAYLIST, playlist)
+    commit(types.SET_SEQUENCE_LIST, sequenceList)
+    commit(types.SET_CURRENT_INDEX, currentIndex)
+    commit(types.SET_FULL_SCREEN, true)
+    commit(types.SET_PLAYING_STATE, true)
+}

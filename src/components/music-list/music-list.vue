@@ -76,6 +76,7 @@
         created() {
             this.probeType = 3
             this.listenScroll = true //监听滚动
+
         },
         mounted() {
             this.imageHeight = this.$refs.bgImage.clientHeight

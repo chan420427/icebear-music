@@ -59,7 +59,7 @@ export function createSong(musicData,vkey) {
 }
 
 //筛选出musicData的歌手，有可能是多个的
-function filterSinger(singer) {
+export function filterSinger(singer) {
     let ret = []
     if (!singer) {
         return ''
