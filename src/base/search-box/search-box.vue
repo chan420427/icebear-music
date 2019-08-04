@@ -1,12 +1,14 @@
 <template>
     <div class="search-box">
         <i class="icon-search"></i>
-        <input class="box" v-model="query" :placeholder="placeholder">
+        <input ref="query" class="box" v-model="query" :placeholder="placeholder">
         <i @click="clear" v-show="query" class="icon-dismiss"></i>
     </div>
 </template>
 
 <script type="text/ecmascript-6">
+    import {debounce} from "../../common/js/util";
+
     export default {
         props: {
             placeholder: {
@@ -25,13 +27,18 @@
             },
             setQuery(query) {
                 this.query = query
+            },
+            blur() {
+                this.$refs.query.blur()
             }
         },
         created() {
             //将query这个搜索值曝光出去，所以通过$emit派发出去外部组件
-            this.$watch('query',(newQuery) => {
+            /*用了debounce函数，侦测到query变化时不会马上执行，也不会被多次执行，
+            不管期间query变化多少次，里面的操作要200ms才执行一次*/
+            this.$watch('query',debounce((newQuery) => {
                 this.$emit('query',newQuery)
-            })
+            },200))
         }
     }
 </script>

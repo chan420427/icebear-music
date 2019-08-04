@@ -16,3 +16,17 @@ export function shuffle(arr) {
     }
     return _arr
 }
+
+//截流函数，优化搜索，不是每次退格都请求一次资源，延迟一下，请求慢一点
+export function debounce(func, delay) {
+    let timer
+
+    return function (...args) {
+        if (timer) {
+            clearTimeout(timer)
+        }
+        timer = setTimeout(() => {
+            func.apply(this, args)
+        }, delay)
+    }
+}

@@ -2,7 +2,9 @@
     <scroll class="suggest"
             :data="result"
             :pullup="pullup"
+            :beforeScroll="beforeScroll"
             @scrollToEnd="searchMore"
+            @beforeScroll="listScroll"
             ref="suggest"
     >
         <ul class="suggest-list">
@@ -16,6 +18,9 @@
             </li>
             <loading v-show="hasMore" title=""></loading>
         </ul>
+        <div v-show="!hasMore && !result.length" class="no-result-wrapper">
+            <no-result title="抱歉，暂无搜索结果"></no-result>
+        </div>
     </scroll>
 </template>
 
@@ -28,6 +33,7 @@
     import Loading from '../../base/loading/loading'
     import Singer from '../../common/js/singer'
     import {mapMutations,mapActions} from 'vuex'
+    import NoResult from '../../base/no-result/no-result'
 
     const TYPE_SINGER = 'singer'
     const perpage = 20//每一页返回的个数
@@ -50,6 +56,7 @@
               page: 1,
               result: [],
               pullup: true,
+              beforeScroll:true,
               hasMore: true,//判断搜索回来的结果有没有加载完的一个标记位
               searchList: []
 
@@ -113,6 +120,15 @@
                 }else {
                     this.insertSong(item)
                 }
+
+                //派发这个事件是为了知道搜索当时点了哪首歌，好记录搜索历史
+                this.$emit('select')
+            },
+            refresh() {
+              this.$refs.suggest.refresh()
+            },
+            listScroll() {
+                this.$emit('listScroll')
             },
             _checkMore(data) {
                 const song = data.song
@@ -171,6 +187,7 @@
             }
         },
         components: {
+            NoResult,
             Scroll,
             Loading
         }

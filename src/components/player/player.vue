@@ -69,7 +69,8 @@
                             <i @click="next" class="icon-next"></i>
                         </div>
                         <div class="icon i-right">
-                            <i class="icon-not-favorite"></i>
+                            <i class="icon" @click="toggleFavorite(currentSong)"
+                               :class="getFavoriteIcon(currentSong)"></i>
                         </div>
                     </div>
                 </div>
@@ -90,11 +91,12 @@
                     </progress-circle>
                 </div>
                 <div class="control">
-                    <i class="icon-playlist"></i>
+                    <i class="icon-playlist" @click.stop="showPlaylist"></i>
                 </div>
             </div>
         </transition>
-        <audio ref="audio" :src="currentSong.url" @canplay="ready"
+        <playlist ref="playlist"></playlist>
+        <audio ref="audio" :src="currentSong.url" @play="ready"
                @error="error" @timeupdate="updateTime" @ended="end"></audio>
     </div>
 </template>
@@ -105,17 +107,18 @@
     import {prefixStyle} from 'common/js/dom'
     import ProgressBar from '../../base/progress-bar/progress-bar'
     import ProgressCircle from '../../base/progress-circle/progress-circle'
-    import {playMode} from 'common/js/config'
-    import {shuffle} from "../../common/js/util";
+    import {playMode} from '../../common/js/config'
     import Lyric from 'lyric-parser'
     import Scroll from '../../base/scroll/scroll'
-
+    import Playlist from '../../components/playlist/playlist'
+    import {playerMixin} from "../../common/js/mixin";
 
 
     const transform = prefixStyle('transform')
     const transitionDuration = prefixStyle('transitionDuration')
 
     export default {
+        mixins:[playerMixin],
         data() {
             return {
                 songReady: false,//标志位
@@ -134,11 +137,6 @@
             playIcon() {
                 return this.playing ? 'icon-pause' : 'icon-play'
             },
-            //播放模式
-            iconMode() {
-                return this.mode === playMode.sequence ? 'icon-sequence' : this.mode ===
-                playMode.loop ? 'icon-loop' : 'icon-random'
-            },
             miniIcon() {
                 return this.playing ? 'icon-pause-mini' : 'icon-play-mini'
             },
@@ -151,12 +149,8 @@
             },
             ...mapGetters([
                 'fullScreen',
-                'playlist',
-                'currentSong',
                 'playing',
                 'currentIndex',
-                'mode',
-                'sequenceList'
             ])
         },
         created() {
@@ -279,6 +273,7 @@
             },
             ready() {
                 this.songReady = true
+                this.savePlayHistory(this.currentSong)
             },
             error() {
                 this.songReady = true
@@ -337,6 +332,9 @@
                 }
                 this.playingLyric = txt
             },
+            showPlaylist() {
+                this.$refs.playlist.show()
+            },
             middleTouchStart(e) {
                 this.touch.initiated = true
                 const touch = e.touches[0]
@@ -373,7 +371,7 @@
                         //最终停的位置
                         offsetWidth = -window.innerWidth
                         opacity = 0
-                        //this.currentShow = 'lyric'
+                        this.currentShow = 'lyric'
                     } else {
                         offsetWidth = 0
                         opacity = 1
@@ -395,18 +393,6 @@
                 this.$refs.middleL.style.opacity = opacity
                 this.$refs.middleL.style[transitionDuration] = `${time}ms`
                 //this.touch.initiated = false
-            },
-            changeMode() {
-                const mode = (this.mode + 1) % 3
-                this.setPlayMode(mode)
-                let list = null
-                if (mode === playMode.random) {
-                    list = shuffle(this.sequenceList)
-                } else {
-                    list = this.sequenceList
-                }
-                this.resetCurrentIndex(list)
-                this.setPlayList(list)
             },
             //重新设置当前歌曲,保证切换播放模式时当前的播放歌曲是不发生变化的
             resetCurrentIndex(list) {
@@ -449,14 +435,17 @@
             },
             ...mapMutations({
                 setFullScreen: 'SET_FULL_SCREEN',
-                setPlayingState: 'SET_PLAYING_STATE',
-                setCurrentIndex: 'SET_CURRENT_INDEX',
-                setPlayMode: 'SET_PLAY_MODE',
-                setPlayList: 'SET_PLAYLIST'
             }),
+            ...mapActions([
+                'savePlayHistory'
+            ])
         },
         watch: {
             currentSong(newSong, oldSong) {
+                //歌曲播放列表都被删除完毕后，没有当前正在播放的歌曲了，这样就不会报错
+                if(!newSong.id) {
+                    return
+                }
                 //在切换播放模式的时候。changeMode方法会改变playlist和currentIndex就会导致监听到currentSong发生变化，但其实id是没有改变的
                 if (newSong.id === oldSong.id) {
                     return
@@ -464,8 +453,13 @@
                 if (this.currentLyric) {
                     //一直按下一首就会出现bug，因为原来每一次都会创建一个歌词对象，没有清除是一个又创建一个
                     this.currentLyric.stop()
+                    this.currentTime = 0
+                    this.playingLyric = ''
+                    this.currentLineNum = 0
                 }
-                setTimeout(() => {//延迟 请求播放地址完成后再播放
+
+                clearTimeout(this.timer)
+                this.timer = setTimeout(() => {//延迟 请求播放地址完成后再播放
                     this.$refs.audio.play()
                     this.getLyric()
                 },1000)
@@ -481,7 +475,8 @@
         components: {
             ProgressBar,
             ProgressCircle,
-            Scroll
+            Scroll,
+            Playlist
         }
     }
 </script>

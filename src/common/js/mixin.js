@@ -1,6 +1,6 @@
 import {mapGetters, mapMutations, mapActions} from 'vuex'
-import {playMode} from 'common/js/config'
-import {shuffle} from 'common/js/util'
+import {playMode} from '../../common/js/config'
+import {shuffle} from '../../common/js/util'
 
 export const playlistMixin = {
   computed: {
@@ -25,6 +25,8 @@ export const playlistMixin = {
     }
   }
 }
+
+
 
 export const playerMixin = {
   computed: {
@@ -109,6 +111,7 @@ export const searchMixin = {
     blurInput() {
       this.$refs.searchBox.blur()
     },
+      //监听query变化的事件
     addQuery(query) {
       this.$refs.searchBox.setQuery(query)
     },
